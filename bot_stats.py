@@ -26,13 +26,13 @@ async def update_bot_short_description(bot: Bot):
         
         # Choose which metric to display (prioritize monthly active, fallback to peak, then total)
         if monthly_active > 0:
-            description = f"🤖 Aktivno korisnika (30 dana): {monthly_active}"
+            description = f"🤖 Aktivno korisnika (30 dana): {monthly_active}\n🤖 Usuários ativos (30 dias): {monthly_active}"
         elif peak_users > 0:
-            description = f"🤖 Rekordni broj korisnika: {peak_users}"
+            description = f"🤖 Rekordni broj korisnika: {peak_users}\n🤖 Recorde de usuários: {peak_users}"
         elif total_users > 0:
-            description = f"🤖 Ukupno korisnika: {total_users}"
+            description = f"🤖 Ukupno korisnika: {total_users}\n🤖 Total de usuários: {total_users}"
         else:
-            description = "🤖 Telegram bot za podsetke i organizaciju"
+            description = "🤖 Telegram bot za podsetke i organizaciju\n🤖 Bot Telegram para lembretes e organização"
         
         # Update short description
         await bot.set_my_short_description(short_description=description)
@@ -73,7 +73,29 @@ Komande:
 /recurring - Periodični podseci
 /settings - Podešavanja
 
-Napravljeno sa ❤️ za produktivnost"""
+Napravljeno sa ❤️ za produktivnost
+
+---
+
+Bem-vindo ao Kosmos Bot! 🚀
+
+Organize seus lembretes e tarefas com facilidade.
+
+📊 Estatísticas:
+• Usuários ativos (30 dias): {monthly_active}
+• Total de registrados: {total_users}
+
+Comandos:
+/start - Começar a usar
+/help - Ajuda e instruções
+/list - Ver lembretes futuros
+/hoje - Ver compromissos de hoje
+/amanha - Ver compromissos de amanhã
+/export - Exportar lembretes
+/recurring - Lembretes recorrentes
+/settings - Configurações
+
+Feito com ❤️ para produtividade"""
         
         await bot.set_my_description(description=description)
         

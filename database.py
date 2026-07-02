@@ -11,6 +11,7 @@ from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 
 from config import DB_FULL_PATH
+from message_queue import create_pending_message_table
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,11 @@ def init_database():
         # Run migration for remind_before column
         migrate_remind_before_column(cursor)
 
-        logger.info("Database initialized successfully")
+    # Create pending messages table for message queue
+    # (must be called outside the with block as it creates its own connection)
+    create_pending_message_table()
+
+    logger.info("Database initialized successfully")
 
 
 # ==================== USER OPERATIONS ====================
@@ -465,6 +470,38 @@ def get_reminders_by_date(target_date) -> List[Dict[str, Any]]:
             return [dict(row) for row in rows]
     except Exception as e:
         logger.error(f"Error getting reminders by date {target_date}: {e}")
+        return []
+
+
+def get_user_reminders_by_date(user_id: int, target_date) -> List[Dict[str, Any]]:
+    """
+    Get all pending reminders for a specific user on a specific date.
+    Used by /hoje and /amanha commands.
+
+    Args:
+        user_id: Telegram user ID
+        target_date: Date to search for (date object or string 'YYYY-MM-DD')
+
+    Returns:
+        List of reminders as dictionaries
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT r.*, u.timezone
+                FROM reminders r
+                JOIN users u ON r.user_id = u.telegram_id
+                WHERE DATE(r.scheduled_time) = ?
+                AND r.status = 'pending'
+                AND r.user_id = ?
+                ORDER BY r.scheduled_time ASC
+            """, (target_date, user_id))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error getting reminders for user {user_id} on date {target_date}: {e}")
         return []
 
 

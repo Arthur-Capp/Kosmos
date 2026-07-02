@@ -57,43 +57,14 @@ async def update_bot_description(bot: Bot):
         monthly_active = get_monthly_active_users()
         total_users = get_total_users()
         
-        # Create full description with statistics
-        description = f"""Dobrodošli u Kosmos Bot! 🚀
+        # Create full description with statistics (Telegram limit: 512 chars)
+        description = f"""🚀 Kosmos Bot - Lembretes e organização
 
-Organizujte svoje podsetke i zadatke sa lakoćom.
-
-📊 Statistika:
-• Aktivnih korisnika (30 dana): {monthly_active}
-• Ukupno registrovanih: {total_users}
-
-Komande:
-/start - Započni korišćenje
-/help - Pomoć i uputstva
-/list - Pregled podseka
-/recurring - Periodični podseci
-/settings - Podešavanja
-
-Napravljeno sa ❤️ za produktivnost
-
----
-
-Bem-vindo ao Kosmos Bot! 🚀
-
-Organize seus lembretes e tarefas com facilidade.
-
-📊 Estatísticas:
-• Usuários ativos (30 dias): {monthly_active}
-• Total de registrados: {total_users}
+📊 Usuários ativos (30 dias): {monthly_active} | Total: {total_users}
 
 Comandos:
-/start - Começar a usar
-/help - Ajuda e instruções
-/list - Ver lembretes futuros
-/hoje - Ver compromissos de hoje
-/amanha - Ver compromissos de amanhã
-/export - Exportar lembretes
-/recurring - Lembretes recorrentes
-/settings - Configurações
+/start /help /list /hoje /amanha
+/export /recurring /settings
 
 Feito com ❤️ para produtividade"""
         

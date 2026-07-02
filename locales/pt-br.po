@@ -1,0 +1,182 @@
+# Brazilian Portuguese translations for Kosmos Telegram Bot
+# Language: Portuguese (Brazil) (pt-BR)
+
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: pt-BR\n"
+
+# Welcome and start messages
+msgid "welcome_message"
+msgstr "Bem-vindo ao Kosmos! 🚀\n\nSou seu bot de lembretes pessoal. Vou ajudar você a lembrar de coisas importantes.\n\nPara criar um lembrete, basta me enviar uma mensagem como:\n• Café amanhã 14:00\n• Reunião seg 10:00\n• Ligar para João 18:30\n\nUse /help para ver todos os comandos disponíveis."
+
+msgid "welcome_back"
+msgstr "Bem-vindo de volta! 👋"
+
+msgid "timezone_question"
+msgstr "Não foi possível detectar seu fuso horário. Por favor, selecione seu fuso horário:"
+
+msgid "timezone_selected"
+msgstr "Fuso horário definido para: {timezone}"
+
+msgid "ready_to_use"
+msgstr "Tudo pronto! 🎉\n\nUse os botões abaixo para acesso rápido, ou apenas me envie uma mensagem para criar um lembrete."
+
+# Commands help
+msgid "help_message"
+msgstr "📖 *Ajuda do Kosmos*\n\n*Criando lembretes:*\nEnvie uma mensagem com texto e horário:\n• `Texto do lembrete amanhã 16:00`\n• `Texto do lembrete seg 10:00`\n• `Texto do lembrete 14:30`\n\n*Lembretes recorrentes:* 🔁\nUse /recurring para criar lembretes que repetem automaticamente:\n• Diário - Todo dia no mesmo horário\n• A cada X dias - Repetir a cada N dias\n• Semanal - Dias específicos (Seg, Qua, Sex...)\n• Mensal - Em um dia específico do mês\n\n*Formatos de horário suportados:*\n• Dias: amanhã, dep (depois de amanhã), seg/ter/qua/qui/sex/sáb/dom\n• Próxima semana: próx seg/ter/qua/qui/sex/sáb/dom\n• Horário: 21:00, 8, 7am, 2100, etc.\n\n*Comandos:*\n/list - Ver todos os lembretes futuros\n/recurring - Criar lembrete recorrente\n/settings - Alterar idioma, formato de hora, fuso horário\n/help - Mostrar esta mensagem de ajuda\n\n*Ações rápidas:*\nUse os botões 'Lista' e 'Recorrente' abaixo para acesso rápido."
+
+msgid "new_reminder_prompt"
+msgstr "📝 Para criar um lembrete, envie-me uma mensagem neste formato:\n\n`[Texto do lembrete] [dia] [horário]`\n\n*Exemplos:*\n• Levar vara de pescar para o lago amanhã 16:00\n• Reunião seg 10:00\n• Ligar próxima segunda 9:00\n• Café 14:30"
+
+# Reminder creation
+msgid "reminder_created"
+msgstr "Registrado ✓"
+
+msgid "reminder_parse_error"
+msgstr "Não entendi o formato do horário. Tente novamente:\n\n`[Mensagem] [dia] [horário]`\n\n*Exemplos:*\n• Levar vara de pescar amanhã 16:00\n• Reunião seg 10:00\n• Reunião próx qui 10:00\n• Café 14:30"
+
+# Reminder notifications
+msgid "reminder_notification"
+msgstr "🔔 *Lembrete:*\n\n{message}"
+
+msgid "reminder_postponed"
+msgstr "Lembrete adiado ✓"
+
+msgid "reminder_postponed_to"
+msgstr "⏰ Lembrete adiado para {time}"
+
+msgid "custom_time_prompt"
+msgstr "Digite o novo horário (ex.: 19:00 ou ter 19:00):"
+
+msgid "custom_time_parse_error"
+msgstr "Formato de horário inválido. Digite:\n\n• Apenas horário: `19:00` ou `19h`\n• Com dia: `ter 19:00` ou `amanhã 14:00`"
+
+msgid "postpone_15m"
+msgstr "15 min"
+
+msgid "postpone_30m"
+msgstr "30 min"
+
+msgid "postpone_1h"
+msgstr "1 hora"
+
+msgid "postpone_3h"
+msgstr "3 horas"
+
+msgid "postpone_1d"
+msgstr "1 dia"
+
+msgid "postpone_custom"
+msgstr "Horário personalizado"
+
+# List reminders
+msgid "list_empty"
+msgstr "Você não tem lembretes futuros.\n\nCrie um me enviando uma mensagem!"
+
+msgid "list_header"
+msgstr "📝 *Seus lembretes:*\n"
+
+msgid "reminder_item"
+msgstr "{index}. {message}\n📅 {date} às {time}"
+
+msgid "delete_button"
+msgstr "Deletar"
+
+msgid "reminder_deleted"
+msgstr "Lembrete deletado ✓"
+
+# Settings
+msgid "settings_menu"
+msgstr "⚙️ *Configurações*\n\nConfigurações atuais:\n• Idioma: {lang_name}\n• Formato de hora: {time_format}\n• Fuso horário: {timezone}\n\nO que você gostaria de alterar?"
+
+msgid "settings_language"
+msgstr "🌐 Idioma"
+
+msgid "settings_time_format"
+msgstr "🕐 Formato de hora"
+
+msgid "settings_timezone"
+msgstr "🌍 Fuso horário"
+
+msgid "settings_back"
+msgstr "← Voltar"
+
+msgid "language_changed"
+msgstr "Idioma alterado para Português ✓"
+
+msgid "time_format_changed"
+msgstr "Formato de hora alterado para: {format}"
+
+msgid "timezone_changed"
+msgstr "Fuso horário alterado para: {timezone}"
+
+msgid "select_language"
+msgstr "Selecione seu idioma:"
+
+msgid "select_time_format"
+msgstr "Selecione o formato de hora:"
+
+msgid "select_timezone"
+msgstr "Selecione seu fuso horário:"
+
+msgid "language_english"
+msgstr "🇬🇧 Inglês"
+
+msgid "language_serbian"
+msgstr "🇷🇸 Sérvio"
+
+msgid "language_portuguese"
+msgstr "🇧🇷 Português"
+
+msgid "time_format_12h"
+msgstr "12 horas (AM/PM)"
+
+msgid "time_format_24h"
+msgstr "24 horas"
+
+# Common
+msgid "error_occurred"
+msgstr "Ocorreu um erro. Tente novamente."
+
+msgid "invalid_command"
+msgstr "Comando inválido. Use /help para ver os comandos disponíveis."
+
+# Bot menu
+msgid "menu_list"
+msgstr "Lista"
+
+msgid "menu_new_reminder"
+msgstr "Novo Lembrete"
+
+# Edit reminder
+msgid "edit_button"
+msgstr "Editar"
+
+msgid "edit_prompt"
+msgstr "✏️ *Editando:* {reminder_text}\n\nResponda com o novo texto e/ou horário:\n• `Novo texto 15:00` - alterar ambos\n• `Novo texto` - alterar apenas o texto\n• `15:00` - alterar apenas o horário"
+
+msgid "edit_cancelled"
+msgstr "Edição cancelada"
+
+msgid "reminder_updated"
+msgstr "Lembrete atualizado ✓"
+
+msgid "edit_parse_error"
+msgstr "Não entendi a entrada. Tente novamente ou envie /list para cancelar."
+
+msgid "edit_not_found"
+msgstr "Lembrete não encontrado ou já deletado."
+
+msgid "reminder_in_past"
+msgstr "Não é possível criar um lembrete no passado. Escolha uma data e horário futuros."
+
+# Quick reminders
+msgid "quick_title"
+msgstr "⚡ *Seus lembretes mais frequentes:*"
+
+msgid "quick_when"
+msgstr "⏰ *{text}*\n\nQuando? Digite o horário (ex.: `sáb 20:00`, `amanhã 14:00`, `18:30`)"
+
+msgid "quick_no_history"
+msgstr "Você não tem histórico suficiente de lembretes para acesso rápido."

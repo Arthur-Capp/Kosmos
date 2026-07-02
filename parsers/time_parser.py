@@ -31,6 +31,9 @@ DAY_KEYWORDS = {
     # English
     'tomorrow': 1,
     'dat': 2,  # day after tomorrow
+    # Portuguese
+    'amanhã': 1,
+    'depois de amanhã': 2,
 }
 
 # Weekday keywords mapping (both Serbian and English)
@@ -59,12 +62,23 @@ WEEKDAY_KEYWORDS = {
     'friday': 4,
     'saturday': 5,
     'sunday': 6,
+    # Portuguese
+    'seg': 0, 'segunda': 0, 'segunda-feira': 0,
+    'ter': 1, 'terça': 1, 'terça-feira': 1,
+    'qua': 2, 'quarta': 2, 'quarta-feira': 2,
+    'qui': 3, 'quinta': 3, 'quinta-feira': 3,
+    'sex': 4, 'sexta': 4, 'sexta-feira': 4,
+    'sáb': 5, 'sabado': 5, 'sábado': 5,
+    'dom': 6, 'domingo': 6,
 }
 
 # "Next week" keywords - prefix modifier for weekday keywords
 NEXT_KEYWORDS = {
     'next',  # English
     'sl',    # Serbian (sledeći)
+    'próx',  # Portuguese
+    'próxima',
+    'próximo',
 }
 
 
@@ -403,7 +417,7 @@ def format_datetime(dt: datetime, language: str = "en", time_format: str = "24h"
         Formatted datetime string
     """
     # Format date
-    date_str = dt.strftime("%d.%m.%Y.")
+    date_str = dt.strftime("%d/%m/%Y")
 
     # Format time
     if time_format == "12h":
@@ -454,7 +468,7 @@ def format_reminder_confirmation(
     else:
         # Another day - show day abbreviation, date and time
         day_abbr = scheduled_time.strftime("%a")
-        date_str = scheduled_time.strftime("%d.%m.%Y.")
+        date_str = scheduled_time.strftime("%d/%m/%Y")
         return f"{prefix} {reminder_text} > {day_abbr} {date_str} {time_str}"
 
 

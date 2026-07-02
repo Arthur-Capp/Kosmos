@@ -126,6 +126,9 @@ msgstr "🇬🇧 English"
 msgid "language_serbian"
 msgstr "🇷🇸 Srpski"
 
+msgid "language_portuguese"
+msgstr "🇧🇷 Português"
+
 msgid "time_format_12h"
 msgstr "12-hour (AM/PM)"
 

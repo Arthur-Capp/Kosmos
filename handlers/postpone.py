@@ -241,8 +241,21 @@ async def cancel_custom_time(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return ConversationHandler.END
 
 
-def _build_recurring_notification_keyboard(reminder_id):
+def _build_recurring_notification_keyboard(reminder_id, user_lang="en"):
     """Build the postpone + delete keyboard for a recurring reminder notification."""
+    if user_lang == "pt-br":
+        day_label = "1 dia"
+        custom_label = "Outro horário"
+        delete_label = "🗑️ Excluir recorrência"
+    elif user_lang == "sr-lat":
+        day_label = "1 dan"
+        custom_label = "Drugo vreme"
+        delete_label = "🗑️ Obriši ponavljanje"
+    else:
+        day_label = "1 day"
+        custom_label = "Custom time"
+        delete_label = "🗑️ Delete recurrence"
+
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("15 min", callback_data=f"postpone_{reminder_id}_15m"),
@@ -251,11 +264,11 @@ def _build_recurring_notification_keyboard(reminder_id):
         ],
         [
             InlineKeyboardButton("3h", callback_data=f"postpone_{reminder_id}_3h"),
-            InlineKeyboardButton("1 dan", callback_data=f"postpone_{reminder_id}_1d"),
-            InlineKeyboardButton("Drugo vreme", callback_data=f"postpone_{reminder_id}_custom"),
+            InlineKeyboardButton(day_label, callback_data=f"postpone_{reminder_id}_1d"),
+            InlineKeyboardButton(custom_label, callback_data=f"postpone_{reminder_id}_custom"),
         ],
         [
-            InlineKeyboardButton("🗑️ Obriši ponavljanje", callback_data=f"stop_recurring_{reminder_id}")
+            InlineKeyboardButton(delete_label, callback_data=f"stop_recurring_{reminder_id}")
         ],
     ])
 
@@ -268,22 +281,43 @@ async def stop_recurring_callback(update: Update, context: ContextTypes.DEFAULT_
     reminder_id = int(query.data.replace("stop_recurring_", ""))
     user_id = update.effective_user.id
 
+    user = get_user(user_id)
+    user_lang = user.get("language", "en") if user else "en"
+
     reminder = get_reminder_by_id(reminder_id)
     if not reminder or reminder['user_id'] != user_id:
-        await query.edit_message_text("❌ Podsetnik nije pronađen.")
+        await query.edit_message_text(
+            "❌ Podsetnik nije pronađen." if user_lang == "sr-lat" else "❌ Lembrete não encontrado." if user_lang == "pt-br" else "❌ Reminder not found."
+        )
         return
+
+    if user_lang == "sr-lat":
+        confirm_label = "🗑️ Obriši zauvek"
+        cancel_label = "❌ Otkaži"
+        title = "🔁 *Ponavljajući podsetnik*"
+        question = "Želiš li da trajno obrišeš ovaj ponavljajući podsetnik?"
+    elif user_lang == "pt-br":
+        confirm_label = "🗑️ Excluir para sempre"
+        cancel_label = "❌ Cancelar"
+        title = "🔁 *Lembrete Recorrente*"
+        question = "Deseja excluir permanentemente este lembrete recorrente?"
+    else:
+        confirm_label = "🗑️ Delete Forever"
+        cancel_label = "❌ Cancel"
+        title = "🔁 *Recurring Reminder*"
+        question = "Do you want to permanently delete this recurring reminder?"
 
     keyboard = [
         [
-            InlineKeyboardButton("🗑️ Obriši zauvek", callback_data=f"stop_recurring_confirm_{reminder_id}"),
-            InlineKeyboardButton("❌ Otkaži", callback_data=f"stop_recurring_cancel_{reminder_id}"),
+            InlineKeyboardButton(confirm_label, callback_data=f"stop_recurring_confirm_{reminder_id}"),
+            InlineKeyboardButton(cancel_label, callback_data=f"stop_recurring_cancel_{reminder_id}"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        f"🔁 *Ponavljajući podsetnik*\n\n"
-        f"Želiš li da trajno obrišeš ovaj ponavljajući podsetnik?\n"
+        f"{title}\n\n"
+        f"{question}\n"
         f"_{reminder['message_text']}_",
         parse_mode="Markdown",
         reply_markup=reply_markup
@@ -298,17 +332,26 @@ async def stop_recurring_confirm_callback(update: Update, context: ContextTypes.
     reminder_id = int(query.data.replace("stop_recurring_confirm_", ""))
     user_id = update.effective_user.id
 
+    user = get_user(user_id)
+    user_lang = user.get("language", "en") if user else "en"
+
     reminder = get_reminder_by_id(reminder_id)
     if not reminder or reminder['user_id'] != user_id:
-        await query.edit_message_text("❌ Podsetnik nije pronađen.")
+        await query.edit_message_text(
+            "❌ Podsetnik nije pronađen." if user_lang == "sr-lat" else "❌ Lembrete não encontrado." if user_lang == "pt-br" else "❌ Reminder not found."
+        )
         return
 
     success = delete_reminder(reminder_id)
     if success:
-        await query.edit_message_text("✅ Ponavljajući podsetnik obrisan.")
+        await query.edit_message_text(
+            "✅ Ponavljajući podsetnik obrisan." if user_lang == "sr-lat" else "✅ Lembrete recorrente excluído." if user_lang == "pt-br" else "✅ Recurring reminder deleted."
+        )
         logger.info(f"User {user_id} stopped recurring reminder {reminder_id} from notification")
     else:
-        await query.edit_message_text("❌ Greška prilikom brisanja podsetnika.")
+        await query.edit_message_text(
+            "❌ Greška prilikom brisanja podsetnika." if user_lang == "sr-lat" else "❌ Erro ao excluir lembrete." if user_lang == "pt-br" else "❌ Error deleting reminder."
+        )
 
 
 async def stop_recurring_cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -319,14 +362,19 @@ async def stop_recurring_cancel_callback(update: Update, context: ContextTypes.D
     reminder_id = int(query.data.replace("stop_recurring_cancel_", ""))
     user_id = update.effective_user.id
 
+    user = get_user(user_id)
+    user_lang = user.get("language", "en") if user else "en"
+
     reminder = get_reminder_by_id(reminder_id)
     if not reminder or reminder['user_id'] != user_id:
-        await query.edit_message_text("❌ Podsetnik nije pronađen.")
+        await query.edit_message_text(
+            "❌ Podsetnik nije pronađen." if user_lang == "sr-lat" else "❌ Lembrete não encontrado." if user_lang == "pt-br" else "❌ Reminder not found."
+        )
         return
 
     # Restore original notification with all buttons
     notification_text = f"🔁 {reminder['message_text']}"
-    reply_markup = _build_recurring_notification_keyboard(reminder_id)
+    reply_markup = _build_recurring_notification_keyboard(reminder_id, user_lang)
 
     await query.edit_message_text(
         notification_text,

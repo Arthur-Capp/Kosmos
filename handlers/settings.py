@@ -34,14 +34,22 @@ async def settings_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_timezone = user.get("timezone", "Europe/Belgrade")
 
     # Format current settings for display
-    lang_display = "Srpski" if user_lang == "sr-lat" else "English"
+    if user_lang == "sr-lat":
+        lang_display = "Srpski"
+    elif user_lang == "pt-br":
+        lang_display = "Português"
+    else:
+        lang_display = "English"
     time_format_display = "AM/PM" if user_time_format == "12h" else "24h"
 
     # Build settings message
+    # Escape underscores in timezone to prevent Markdown parsing issues
+    # (e.g. America/Sao_Paulo contains _ which Markdown treats as italic start)
+    safe_timezone = user_timezone.replace("_", "\\_")
     message_text = get_text("settings_menu", user_lang,
                            lang_name=lang_display,
                            time_format=time_format_display,
-                           timezone=user_timezone)
+                           timezone=safe_timezone)
 
     # Create inline keyboard
     keyboard = [
@@ -113,6 +121,10 @@ async def show_language_selection(query, user_lang):
         [InlineKeyboardButton(
             get_text("language_serbian", user_lang),
             callback_data="set_language_sr-lat"
+        )],
+        [InlineKeyboardButton(
+            get_text("language_portuguese", user_lang),
+            callback_data="set_language_pt-br"
         )],
         [InlineKeyboardButton(
             get_text("settings_back", user_lang),
@@ -283,7 +295,12 @@ async def settings_command_callback(query, user_id):
     user_timezone = user.get("timezone", "Europe/Belgrade")
 
     # Format current settings
-    lang_display = "Srpski" if user_lang == "sr-lat" else "English"
+    if user_lang == "sr-lat":
+        lang_display = "Srpski"
+    elif user_lang == "pt-br":
+        lang_display = "Português"
+    else:
+        lang_display = "English"
     time_format_display = "AM/PM" if user_time_format == "12h" else "24h"
 
     message_text = get_text("settings_menu", user_lang,

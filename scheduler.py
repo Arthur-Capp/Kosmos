@@ -9,10 +9,11 @@ import calendar
 from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Bot
 from telegram.error import NetworkError, TimedOut, TelegramError
 
-from database import get_pending_reminders, update_reminder_status, update_reminder_time
+from database import get_pending_reminders, update_reminder_status, update_reminder_time, get_reminders_by_date, get_user
 from i18n import get_text
 from message_queue import process_pending_messages, cleanup_old_messages
 
@@ -166,18 +167,31 @@ async def send_reminder(bot: Bot, reminder: dict):
     # Get user's timezone from the reminder (joined from users table)
     user_timezone = reminder.get('timezone', 'Europe/Belgrade')
 
-    # For now, we'll use English for the notification
-    # In a future enhancement, we could join with users table to get language preference
-    # But the database query already includes timezone from the JOIN
+    # Get user's language preference
+    user = get_user(user_id)
+    user_lang = user.get('language', 'en') if user else 'en'
 
     # Check if recurring (used for icon and delete button)
     is_recurring = reminder.get('is_recurring', 0)
 
-    # Format reminder notification message (🔁 for recurring, 🔔 for one-time)
+    # Format reminder notification message using i18n
+    notification_text = get_text("reminder_notification", user_lang, message=message_text)
     if is_recurring:
-        notification_text = f"🔁 {message_text}"
+        notification_text = notification_text.replace("🔔", "🔁")
+
+    # Translate postpone button labels
+    if user_lang == "sr-lat":
+        btn_1d = "1 dan"
+        btn_custom = "Drugo vreme"
+        btn_stop_recurring = "🗑️ Obriši ponavljanje"
+    elif user_lang == "pt-br":
+        btn_1d = "1 dia"
+        btn_custom = "Outro horário"
+        btn_stop_recurring = "🗑️ Excluir recorrência"
     else:
-        notification_text = f"🔔 {message_text}"
+        btn_1d = "1 day"
+        btn_custom = "Other time"
+        btn_stop_recurring = "🗑️ Delete recurring"
 
     # Create inline keyboard with postpone options
     keyboard = [
@@ -188,15 +202,15 @@ async def send_reminder(bot: Bot, reminder: dict):
         ],
         [
             InlineKeyboardButton("3h", callback_data=f"postpone_{reminder_id}_3h"),
-            InlineKeyboardButton("1 dan", callback_data=f"postpone_{reminder_id}_1d"),
-            InlineKeyboardButton("Drugo vreme", callback_data=f"postpone_{reminder_id}_custom"),
+            InlineKeyboardButton(btn_1d, callback_data=f"postpone_{reminder_id}_1d"),
+            InlineKeyboardButton(btn_custom, callback_data=f"postpone_{reminder_id}_custom"),
         ],
     ]
 
     # Add delete button for recurring reminders
     if is_recurring:
         keyboard.append([
-            InlineKeyboardButton("🗑️ Obriši ponavljanje", callback_data=f"stop_recurring_{reminder_id}")
+            InlineKeyboardButton(btn_stop_recurring, callback_data=f"stop_recurring_{reminder_id}")
         ])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -256,6 +270,64 @@ async def send_reminder(bot: Bot, reminder: dict):
         # Unexpected error
         logger.error(f"Unexpected error sending reminder {reminder_id} to user {user_id}: {e}", exc_info=True)
         # Don't update status - will retry next time
+
+
+async def check_tomorrow_reminders(bot: Bot):
+    """
+    Runs daily at 19:30.
+    Fetches all reminders scheduled for tomorrow for each user
+    and sends a single grouped message per user.
+    """
+    try:
+        tomorrow = datetime.now() + timedelta(days=1)
+        tomorrow_date = tomorrow.date()
+
+        reminders = get_reminders_by_date(tomorrow_date)
+
+        if not reminders:
+            logger.debug("No reminders found for tomorrow")
+            return
+
+        # Group by user_id
+        grouped = {}
+        for r in reminders:
+            user_id = r['user_id']
+            if user_id not in grouped:
+                grouped[user_id] = []
+            grouped[user_id].append(r)
+
+        logger.info(f"Sending grouped tomorrow reminders to {len(grouped)} users")
+
+        # Send grouped message to each user
+        for user_id, user_reminders in grouped.items():
+            try:
+                date_str = tomorrow.strftime("%d/%m/%Y")
+                message = f"📅 Amanhã ({date_str}) seus compromissos são:\n\n"
+
+                for r in user_reminders:
+                    # Parse scheduled_time (stored as string in SQLite)
+                    time_str = r['scheduled_time']
+                    if '+' in time_str:
+                        time_str = time_str.split('+')[0]
+                    if '.' in time_str:
+                        time_str = time_str.split('.')[0]
+                    scheduled_dt = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S')
+                    time_formatted = scheduled_dt.strftime("%H:%M")
+
+                    message += f"• {time_formatted} - {r['message_text']}\n"
+
+                await bot.send_message(
+                    chat_id=user_id,
+                    text=message,
+                    parse_mode="Markdown"
+                )
+                logger.info(f"Grouped tomorrow reminders sent to user {user_id}")
+
+            except Exception as e:
+                logger.error(f"Failed to send grouped tomorrow reminders to user {user_id}: {e}")
+
+    except Exception as e:
+        logger.error(f"Error in check_tomorrow_reminders: {e}", exc_info=True)
 
 
 def start_scheduler(bot: Bot):
@@ -324,6 +396,16 @@ def start_scheduler(bot: Bot):
             replace_existing=True
         )
         logger.info("Bot statistics update jobs scheduled")
+
+    # Add job to send grouped tomorrow reminders daily at 19:30
+    scheduler.add_job(
+        check_tomorrow_reminders,
+        CronTrigger(hour=19, minute=30),
+        args=[bot],
+        id='tomorrow_reminders',
+        name='Send grouped reminders for tomorrow at 19:30',
+        replace_existing=True
+    )
 
     scheduler.start()
     logger.info("Scheduler started - checking reminders every minute, pending messages every 30 seconds")

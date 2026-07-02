@@ -175,6 +175,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_lang == "sr-lat":
         await update.message.reply_text("❌ Otkazano.")
+    elif user_lang == "pt-br":
+        await update.message.reply_text("❌ Cancelado.")
     else:
         await update.message.reply_text("❌ Cancelled.")
 
@@ -187,7 +189,7 @@ def register_handlers(application):
         entry_points=[
             CommandHandler("quick", quick_command),
             MessageHandler(
-                filters.Regex("^(⚡ Quick|⚡ Brzi)$"), quick_command
+                filters.Regex("^(⚡ Quick|⚡ Brzi|⚡ Rápido)$"), quick_command
             )
         ],
         states={

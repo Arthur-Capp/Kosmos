@@ -10,7 +10,7 @@ import pytz
 
 from database import create_user, get_user
 from i18n import get_text
-from config import TIMEZONE_OPTIONS
+from config import TIMEZONE_OPTIONS, DEFAULT_TIMEZONE
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,10 @@ def get_main_keyboard(language: str = "en"):
     if language == "sr-lat":
         keyboard = [
             [KeyboardButton("🔁 Ponavljajući"), KeyboardButton("📋 Lista")],
+        ]
+    elif language == "pt-br":
+        keyboard = [
+            [KeyboardButton("🔁 Recorrente"), KeyboardButton("📋 Lista")],
         ]
     else:
         keyboard = [
@@ -77,7 +81,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             telegram_id=telegram_id,
             username=username,
             language="en",  # Default language
-            timezone="Europe/Belgrade"  # Will be updated if user selects different
+            timezone=DEFAULT_TIMEZONE  # Will be updated if user selects different
         )
 
         # Send welcome message

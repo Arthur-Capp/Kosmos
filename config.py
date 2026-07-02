@@ -29,7 +29,7 @@ LOG_DIR = ROOT_DIR / "log"
 LOG_FILE = LOG_DIR / "app.log"
 
 # Timezone configuration
-DEFAULT_TIMEZONE = os.getenv("DEFAULT_TIMEZONE", "Europe/Belgrade")
+DEFAULT_TIMEZONE = os.getenv("DEFAULT_TIMEZONE", "America/Sao_Paulo")
 
 # Available timezone options for user selection
 # Format: (display_name, timezone_id)
@@ -59,7 +59,7 @@ TIMEZONE_OPTIONS = [
 ]
 
 # Supported languages
-SUPPORTED_LANGUAGES = ["en", "sr-lat"]
+SUPPORTED_LANGUAGES = ["en", "sr-lat", "pt-br"]
 DEFAULT_LANGUAGE = "en"
 
 # Time formats

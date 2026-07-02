@@ -59,12 +59,19 @@ def format_recurrence_description(reminder: dict, language: str = "en") -> str:
     rec_type = reminder.get('recurrence_type')
 
     if rec_type == 'daily':
-        return "svaki dan" if language == "sr-lat" else "every day"
+        if language == "sr-lat":
+            return "svaki dan"
+        elif language == "pt-br":
+            return "diário"
+        else:
+            return "every day"
 
     elif rec_type == 'interval':
         days = reminder.get('recurrence_interval', 1)
         if language == "sr-lat":
             return f"svaka {days} dana" if days > 1 else "svaki dan"
+        elif language == "pt-br":
+            return f"a cada {days} dias" if days > 1 else "diário"
         else:
             return f"every {days} days" if days > 1 else "every day"
 
@@ -84,6 +91,11 @@ def format_recurrence_description(reminder: dict, language: str = "en") -> str:
                 'monday': 'Pon', 'tuesday': 'Uto', 'wednesday': 'Sre',
                 'thursday': 'Čet', 'friday': 'Pet', 'saturday': 'Sub', 'sunday': 'Ned'
             }
+        elif language == "pt-br":
+            day_map = {
+                'monday': 'seg', 'tuesday': 'ter', 'wednesday': 'qua',
+                'thursday': 'qui', 'friday': 'sex', 'saturday': 'sáb', 'sunday': 'dom'
+            }
         else:
             day_map = {
                 'monday': 'Mon', 'tuesday': 'Tue', 'wednesday': 'Wed',
@@ -99,6 +111,8 @@ def format_recurrence_description(reminder: dict, language: str = "en") -> str:
         day_of_month = reminder.get('recurrence_day_of_month', 1)
         if language == "sr-lat":
             return f"svakog {day_of_month}. u mesecu"
+        elif language == "pt-br":
+            return f"todo dia {day_of_month} do mês"
         else:
             suffix = 'th'
             if day_of_month % 10 == 1 and day_of_month != 11:
@@ -163,14 +177,19 @@ def build_reminder_list_message(
                 scheduled_dt_local = scheduled_dt.astimezone(tz)
 
             # Format date and time
-            date_str = scheduled_dt_local.strftime("%d.%m.%Y.")
+            date_str = scheduled_dt_local.strftime("%d/%m/%Y")
             if user_time_format == "12h":
                 time_str = scheduled_dt_local.strftime("%I:%M %p")
             else:
                 time_str = scheduled_dt_local.strftime("%H:%M")
 
             # Add to message
-            separator = "u" if user_lang == "sr-lat" else "at"
+            if user_lang == "sr-lat":
+                separator = "u"
+            elif user_lang == "pt-br":
+                separator = "às"
+            else:
+                separator = "at"
 
             # Check if recurring and add icon + description
             is_recurring = reminder.get('is_recurring', 0)
@@ -301,22 +320,30 @@ async def delete_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if is_recurring:
         # Show confirmation dialog for recurring reminders
-        confirmation_text = (
-            "🔁 *Ponavljajući podsetnik*\n\n"
-            "Želiš li da trajno obrišeš ovaj ponavljajući podsetnik?"
-            if user_lang == "sr-lat" else
-            "🔁 *Recurring Reminder*\n\n"
-            "Do you want to permanently delete this recurring reminder?"
-        )
+        if user_lang == "sr-lat":
+            confirmation_text = (
+                "🔁 *Ponavljajući podsetnik*\n\n"
+                "Želiš li da trajno obrišeš ovaj ponavljajući podsetnik?"
+            )
+        elif user_lang == "pt-br":
+            confirmation_text = (
+                "🔁 *Lembrete Recorrente*\n\n"
+                "Deseja excluir permanentemente este lembrete recorrente?"
+            )
+        else:
+            confirmation_text = (
+                "🔁 *Recurring Reminder*\n\n"
+                "Do you want to permanently delete this recurring reminder?"
+            )
 
         keyboard = [
             [
                 InlineKeyboardButton(
-                    "🗑️ Obriši zauvek" if user_lang == "sr-lat" else "🗑️ Delete Forever",
+                    "🗑️ Obriši zauvek" if user_lang == "sr-lat" else "🗑️ Excluir para sempre" if user_lang == "pt-br" else "🗑️ Delete Forever",
                     callback_data=f"delete_confirm_{reminder_id}"
                 ),
                 InlineKeyboardButton(
-                    "❌ Otkaži" if user_lang == "sr-lat" else "❌ Cancel",
+                    "❌ Otkaži" if user_lang == "sr-lat" else "❌ Cancelar" if user_lang == "pt-br" else "❌ Cancel",
                     callback_data=f"delete_cancel_{reminder_id}"
                 ),
             ]
@@ -404,7 +431,7 @@ async def delete_confirm_callback(update: Update, context: ContextTypes.DEFAULT_
 
     if success:
         await query.answer(
-            "Ponavljajući podsetnik obrisan" if user_lang == "sr-lat" else "Recurring reminder deleted",
+            "Ponavljajući podsetnik obrisan" if user_lang == "sr-lat" else "Lembrete recorrente deletado" if user_lang == "pt-br" else "Recurring reminder deleted",
             show_alert=False
         )
 
@@ -443,11 +470,12 @@ async def delete_cancel_callback(update: Update, context: ContextTypes.DEFAULT_T
     Handle delete cancellation - go back to the list.
     """
     query = update.callback_query
-    await query.answer("Otkazano" if query.from_user.language_code == "sr" else "Cancelled")
 
     user_id = update.effective_user.id
     user = get_user(user_id)
     user_lang = user.get("language", "en") if user else "en"
+
+    await query.answer("Otkazano" if user_lang == "sr-lat" else "Cancelado" if user_lang == "pt-br" else "Cancelled")
     user_timezone = user.get("timezone", "Europe/Belgrade")
     user_time_format = user.get("time_format", "24h")
 
@@ -570,9 +598,9 @@ async def edit_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     time_only_patterns = [
         r'^(\d{1,2}:\d{2})$',  # 15:00
         r'^(\d{1,2})\s*(am|pm)$',  # 3pm, 3 pm
-        r'^(next|sl)\s+(pon|uto|sre|cet|čet|pet|sub|ned|mon|tue|wed|thu|fri|sat|sun)\s+\d{1,2}:\d{2}$',  # next tue 15:00
-        r'^(pon|uto|sre|cet|čet|pet|sub|ned|mon|tue|wed|thu|fri|sat|sun)\s+\d{1,2}:\d{2}$',  # tue 15:00
-        r'^(sutra|prekosutra|tomorrow|dat)\s+\d{1,2}:\d{2}$',  # tomorrow 15:00
+        r'^(next|sl|próxima|próximo)\s+(pon|uto|sre|cet|čet|pet|sub|ned|mon|tue|wed|thu|fri|sat|sun|seg|ter|qua|qui|sex|sáb|dom)\s+\d{1,2}:\d{2}$',  # next tue 15:00 / próxima seg 15:00
+        r'^(pon|uto|sre|cet|čet|pet|sub|ned|mon|tue|wed|thu|fri|sat|sun|seg|ter|qua|qui|sex|sáb|dom)\s+\d{1,2}:\d{2}$',  # tue 15:00 / seg 15:00
+        r'^(sutra|prekosutra|tomorrow|dat|amanhã)\s+\d{1,2}:\d{2}$',  # tomorrow 15:00 / amanhã 15:00
     ]
 
     is_time_only = any(re.match(pattern, user_input, re.IGNORECASE) for pattern in time_only_patterns)

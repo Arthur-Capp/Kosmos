@@ -70,6 +70,30 @@ def migrate_recurring_columns(cursor):
     logger.info("Recurring columns migration completed")
 
 
+def migrate_remind_before_column(cursor):
+    """
+    Migration function to add remind_before column to the reminders table.
+    Allows configuring how many days before the event the user should be reminded.
+    """
+    logger.info("Checking for remind_before column migration...")
+
+    # Get existing columns
+    cursor.execute("PRAGMA table_info(reminders)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+
+    if 'remind_before' not in existing_columns:
+        try:
+            cursor.execute("ALTER TABLE reminders ADD COLUMN remind_before INTEGER DEFAULT 1")
+            logger.info("Added column 'remind_before' to reminders table")
+        except Exception as e:
+            logger.error(f"Error adding column 'remind_before': {e}")
+            raise
+    else:
+        logger.debug("Column 'remind_before' already exists, skipping")
+
+    logger.info("Remind_before column migration completed")
+
+
 def init_database():
     """
     Initialize database and create tables if they don't exist.
@@ -123,6 +147,9 @@ def init_database():
 
         # Run migrations for recurring reminders feature
         migrate_recurring_columns(cursor)
+
+        # Run migration for remind_before column
+        migrate_remind_before_column(cursor)
 
         logger.info("Database initialized successfully")
 
@@ -273,7 +300,8 @@ def create_reminder(
     recurrence_interval: Optional[int] = None,
     recurrence_days: Optional[str] = None,
     recurrence_day_of_month: Optional[int] = None,
-    recurrence_end_date: Optional[datetime] = None
+    recurrence_end_date: Optional[datetime] = None,
+    remind_before: int = 1
 ) -> Optional[int]:
     """
     Create a new reminder (one-time or recurring).
@@ -299,13 +327,15 @@ def create_reminder(
                 INSERT INTO reminders (
                     user_id, message_text, scheduled_time, status,
                     is_recurring, recurrence_type, recurrence_interval,
-                    recurrence_days, recurrence_day_of_month, recurrence_end_date
+                    recurrence_days, recurrence_day_of_month, recurrence_end_date,
+                    remind_before
                 )
-                VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?)
             """, (
                 user_id, message_text, scheduled_time,
                 1 if is_recurring else 0, recurrence_type, recurrence_interval,
-                recurrence_days, recurrence_day_of_month, recurrence_end_date
+                recurrence_days, recurrence_day_of_month, recurrence_end_date,
+                remind_before
             ))
 
             reminder_id = cursor.lastrowid
@@ -405,6 +435,36 @@ def get_pending_reminders() -> List[Dict[str, Any]]:
             return due_reminders
     except Exception as e:
         logger.error(f"Error getting pending reminders: {e}")
+        return []
+
+
+def get_reminders_by_date(target_date) -> List[Dict[str, Any]]:
+    """
+    Get all active reminders for a specific date, joined with user timezone.
+    Used by the daily grouped reminder notification.
+
+    Args:
+        target_date: Date to search for (date object or string 'YYYY-MM-DD')
+
+    Returns:
+        List of reminders as dictionaries with timezone info
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT r.*, u.timezone
+                FROM reminders r
+                JOIN users u ON r.user_id = u.telegram_id
+                WHERE DATE(r.scheduled_time) = ?
+                AND r.status = 'pending'
+                ORDER BY r.scheduled_time ASC
+            """, (target_date,))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error getting reminders by date {target_date}: {e}")
         return []
 
 

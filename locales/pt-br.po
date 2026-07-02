@@ -24,7 +24,7 @@ msgstr "Tudo pronto! 🎉\n\nUse os botões abaixo para acesso rápido, ou apena
 
 # Commands help
 msgid "help_message"
-msgstr "📖 *Ajuda do Kosmos*\n\n*Criando lembretes:*\nEnvie uma mensagem com texto e horário:\n• `Texto do lembrete amanhã 16:00`\n• `Texto do lembrete seg 10:00`\n• `Texto do lembrete 14:30`\n\n*Lembretes recorrentes:* 🔁\nUse /recurring para criar lembretes que repetem automaticamente:\n• Diário - Todo dia no mesmo horário\n• A cada X dias - Repetir a cada N dias\n• Semanal - Dias específicos (Seg, Qua, Sex...)\n• Mensal - Em um dia específico do mês\n\n*Formatos de horário suportados:*\n• Dias: amanhã, dep (depois de amanhã), seg/ter/qua/qui/sex/sáb/dom\n• Próxima semana: próx seg/ter/qua/qui/sex/sáb/dom\n• Horário: 21:00, 8, 7am, 2100, etc.\n\n*Comandos:*\n/list - Ver todos os lembretes futuros\n/hoje - Ver compromissos de hoje\n/amanha - Ver compromissos de amanhã\n/export - Exportar lembretes em arquivo\n/recurring - Criar lembrete recorrente\n/settings - Alterar idioma, formato de hora, fuso horário\n/help - Mostrar esta mensagem de ajuda\n\n*Ações rápidas:*\nUse os botões 'Lista' e 'Recorrente' abaixo para acesso rápido."
+msgstr "📖 *Ajuda do Kosmos*\n\n*Criando lembretes:*\nEnvie uma mensagem com texto e horário:\n• `Texto do lembrete amanhã 16:00`\n• `Texto do lembrete seg 10:00`\n• `Texto do lembrete 14:30`\n\n*Lembretes recorrentes:* 🔁\nUse /recurring para criar lembretes que repetem automaticamente:\n• Diário - Todo dia no mesmo horário\n• A cada X dias - Repetir a cada N dias\n• Semanal - Dias específicos (Seg, Qua, Sex...)\n• Mensal - Em um dia específico do mês\n\n*Formatos de horário suportados:*\n• Dias: amanhã, dep (depois de amanhã), seg/ter/qua/qui/sex/sáb/dom\n• Próxima semana: próx seg/ter/qua/qui/sex/sáb/dom\n• Horário: 21:00, 8, 7am, 2100, etc.\n\n*Comandos:*\n/list - Ver todos os lembretes futuros\n/hoje - Ver compromissos de hoje\n/amanha - Ver compromissos de amanhã\n/export - Exportar lembretes em arquivo\n/recurring - Criar lembrete recorrente\n/settings - Alterar idioma, formato de hora, fuso horário\n/help - Mostrar esta mensagem de ajuda\n\n*Mensagens de voz:*\n🎤 Envie uma mensagem de voz e eu transcrevo e crio o lembrete automaticamente!\n\n*Ações rápidas:*\nUse os botões 'Lista' e 'Recorrente' abaixo para acesso rápido."
 
 msgid "new_reminder_prompt"
 msgstr "📝 Para criar um lembrete, envie-me uma mensagem neste formato:\n\n`[Texto do lembrete] [dia] [horário]`\n\n*Exemplos:*\n• Levar vara de pescar para o lago amanhã 16:00\n• Reunião seg 10:00\n• Ligar próxima segunda 9:00\n• Café 14:30"
@@ -180,3 +180,16 @@ msgstr "⏰ *{text}*\n\nQuando? Digite o horário (ex.: `sáb 20:00`, `amanhã 1
 
 msgid "quick_no_history"
 msgstr "Você não tem histórico suficiente de lembretes para acesso rápido."
+
+# Mensagens de voz
+msgid "voice_transcribing"
+msgstr "🎧 Transcrevendo áudio..."
+
+msgid "voice_transcription_failed"
+msgstr "❌ Não consegui transcrever o áudio. Tente novamente ou envie uma mensagem de texto."
+
+msgid "voice_empty"
+msgstr "❌ O áudio estava vazio ou silencioso. Tente novamente."
+
+msgid "voice_transcribed"
+msgstr "🎤 Você disse: \"{text}\"\n\nCriando lembrete..."

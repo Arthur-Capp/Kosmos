@@ -19,7 +19,7 @@ from config import (
     TELEGRAM_POOL_TIMEOUT
 )
 from database import init_database
-from handlers import start, help as help_handler, reminder, postpone, list_handler, settings, recurring, today, export
+from handlers import start, help as help_handler, reminder, postpone, list_handler, settings, recurring, today, export, voice
 from scheduler import start_scheduler
 
 # Try to import bot_stats for initial description update
@@ -99,6 +99,7 @@ def main():
     settings.register_handlers(application)  # Settings command and callbacks
     recurring.register_handlers(application)  # Recurring reminder conversation
     postpone.register_handlers(application)  # Register postpone callbacks
+    voice.register_handlers(application)  # Voice message handler
     reminder.register_handlers(application)  # Must be last (catches all text messages)
 
     logger.info("All handlers registered successfully!")

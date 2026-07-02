@@ -177,3 +177,16 @@ msgstr "⏰ *{text}*\n\nKada? Upiši vreme (npr. `sub 20:00`, `sutra 14:00`, `18
 
 msgid "quick_no_history"
 msgstr "Nemaš dovoljno podsetnika u istoriji za Quick pristup."
+
+# Glasovne poruke
+msgid "voice_transcribing"
+msgstr "🎧 Transkribujem audio..."
+
+msgid "voice_transcription_failed"
+msgstr "❌ Nisam mogao da transkribujem audio. Pokušajte ponovo ili pošaljite tekstualnu poruku."
+
+msgid "voice_empty"
+msgstr "❌ Audio je prazan ili tih. Pokušajte ponovo."
+
+msgid "voice_transcribed"
+msgstr "🎤 Rekli ste: \"{text}\"\n\nKreiram podsetnik..."

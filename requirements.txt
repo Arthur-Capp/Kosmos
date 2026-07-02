@@ -3,3 +3,5 @@ pytz>=2023.3
 APScheduler>=3.10.0
 python-dotenv>=1.0.0
 polib>=1.2.0
+SpeechRecognition>=3.10.0
+pydub>=0.25.1

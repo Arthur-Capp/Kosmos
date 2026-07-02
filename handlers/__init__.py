@@ -12,5 +12,6 @@ from . import recurring
 from . import quick
 from . import today
 from . import export
+from . import voice
 
-__all__ = ['start', 'help', 'reminder', 'postpone', 'list_handler', 'settings', 'recurring', 'quick', 'today', 'export']
+__all__ = ['start', 'help', 'reminder', 'postpone', 'list_handler', 'settings', 'recurring', 'quick', 'today', 'export', 'voice']

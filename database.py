@@ -11,7 +11,6 @@ from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 
 from config import DB_FULL_PATH
-from message_queue import create_pending_message_table
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +153,8 @@ def init_database():
 
     # Create pending messages table for message queue
     # (must be called outside the with block as it creates its own connection)
+    # Import here to avoid circular import (message_queue imports from database)
+    from message_queue import create_pending_message_table
     create_pending_message_table()
 
     logger.info("Database initialized successfully")

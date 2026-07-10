@@ -19,7 +19,7 @@ from config import (
     TELEGRAM_POOL_TIMEOUT
 )
 from database import init_database
-from handlers import start, help as help_handler, reminder, postpone, list_handler, settings, recurring, today, export, voice
+from handlers import start, help as help_handler, reminder, postpone, list_handler, settings, recurring, today, export, voice, shopping, finance
 from scheduler import start_scheduler
 
 # Try to import bot_stats for initial description update
@@ -48,6 +48,14 @@ async def post_init(application: Application) -> None:
         BotCommand("export", "Exportar lembretes"),
         BotCommand("recurring", "Create recurring reminder"),
         BotCommand("settings", "Change settings"),
+        BotCommand("listas", "Ver listas de compras"),
+        BotCommand("lista", "Criar nova lista de compras"),
+        BotCommand("add", "Adicionar itens à lista"),
+        BotCommand("gasto", "Registrar gasto"),
+        BotCommand("receita", "Registrar receita"),
+        BotCommand("gastos", "Resumo financeiro do mês"),
+        BotCommand("saldo", "Ver saldo atual"),
+        BotCommand("extrato", "Ver extrato recente"),
     ]
     await application.bot.set_my_commands(commands)
     logger.info("Bot commands registered")
@@ -100,6 +108,8 @@ def main():
     recurring.register_handlers(application)  # Recurring reminder conversation
     postpone.register_handlers(application)  # Register postpone callbacks
     voice.register_handlers(application)  # Voice message handler
+    shopping.register_handlers(application)  # Shopping list commands
+    finance.register_handlers(application)  # Finance commands
     reminder.register_handlers(application)  # Must be last (catches all text messages)
 
     logger.info("All handlers registered successfully!")

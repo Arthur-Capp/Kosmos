@@ -151,6 +151,79 @@ def init_database():
         # Run migration for remind_before column
         migrate_remind_before_column(cursor)
 
+        # ==================== SHOPPING LIST TABLES ====================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS shopping_lists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                category TEXT DEFAULT 'geral',
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(telegram_id) ON DELETE CASCADE
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS shopping_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                list_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                quantity TEXT DEFAULT '1',
+                estimated_price REAL DEFAULT 0,
+                is_purchased INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (list_id) REFERENCES shopping_lists(id) ON DELETE CASCADE
+            )
+        """)
+
+        # ==================== FINANCE TABLES ====================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                amount REAL NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+                category TEXT NOT NULL DEFAULT 'outros',
+                description TEXT DEFAULT '',
+                transaction_date DATE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(telegram_id) ON DELETE CASCADE
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS finance_categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+                color TEXT DEFAULT '#3498db',
+                FOREIGN KEY (user_id) REFERENCES users(telegram_id) ON DELETE CASCADE
+            )
+        """)
+
+        # ==================== INDEXES ====================
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_shopping_lists_user
+            ON shopping_lists(user_id, is_active)
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_shopping_items_list
+            ON shopping_items(list_id)
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_transactions_user_date
+            ON transactions(user_id, transaction_date)
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_finance_categories_user
+            ON finance_categories(user_id)
+        """)
+
     # Create pending messages table for message queue
     # (must be called outside the with block as it creates its own connection)
     # Import here to avoid circular import (message_queue imports from database)
@@ -746,6 +819,331 @@ def get_total_users() -> int:
     except Exception as e:
         logger.error(f"Error getting total users: {e}")
         return 0
+
+
+# ==================== SHOPPING LIST OPERATIONS ====================
+
+def create_shopping_list(user_id: int, name: str, category: str = 'geral') -> Optional[int]:
+    """Create a new shopping list. Returns list id or None on failure."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO shopping_lists (user_id, name, category)
+                VALUES (?, ?, ?)
+            """, (user_id, name, category))
+
+            list_id = cursor.lastrowid
+            logger.info(f"Shopping list created: ID={list_id}, user={user_id}, name={name}")
+            return list_id
+    except Exception as e:
+        logger.error(f"Error creating shopping list for user {user_id}: {e}")
+        return None
+
+
+def add_shopping_item(list_id: int, name: str, quantity: str = '1', estimated_price: float = 0) -> bool:
+    """Add an item to a shopping list. Returns True on success."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO shopping_items (list_id, name, quantity, estimated_price)
+                VALUES (?, ?, ?, ?)
+            """, (list_id, name, quantity, estimated_price))
+
+            logger.info(f"Shopping item added: list={list_id}, name={name}, qty={quantity}")
+            return True
+    except Exception as e:
+        logger.error(f"Error adding shopping item to list {list_id}: {e}")
+        return False
+
+
+def get_active_shopping_lists(user_id: int) -> List[Dict[str, Any]]:
+    """Get all active shopping lists for a user. Returns list of dicts with id, name, category, item_count."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT sl.id, sl.name, sl.category,
+                       COUNT(si.id) as item_count,
+                       SUM(CASE WHEN si.is_purchased = 0 THEN 1 ELSE 0 END) as pending_count
+                FROM shopping_lists sl
+                LEFT JOIN shopping_items si ON si.list_id = sl.id
+                WHERE sl.user_id = ? AND sl.is_active = 1
+                GROUP BY sl.id
+                ORDER BY sl.created_at DESC
+            """, (user_id,))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error getting active shopping lists for user {user_id}: {e}")
+        return []
+
+
+def get_shopping_items(list_id: int) -> List[Dict[str, Any]]:
+    """Get all items in a shopping list. Returns list of dicts with id, name, quantity, estimated_price, is_purchased."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, name, quantity, estimated_price, is_purchased
+                FROM shopping_items
+                WHERE list_id = ?
+                ORDER BY is_purchased ASC, id ASC
+            """, (list_id,))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error getting shopping items for list {list_id}: {e}")
+        return []
+
+
+def mark_item_purchased(item_id: int, purchased: bool = True) -> bool:
+    """Mark a shopping item as purchased or not. Returns True on success."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE shopping_items SET is_purchased = ? WHERE id = ?
+            """, (1 if purchased else 0, item_id))
+
+            logger.info(f"Shopping item {item_id} purchased={purchased}")
+            return True
+    except Exception as e:
+        logger.error(f"Error updating shopping item {item_id}: {e}")
+        return False
+
+
+def delete_shopping_list(list_id: int) -> bool:
+    """Delete a shopping list and all its items (cascade). Returns True on success."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM shopping_lists WHERE id = ?", (list_id,))
+
+            logger.info(f"Shopping list deleted: ID={list_id}")
+            return True
+    except Exception as e:
+        logger.error(f"Error deleting shopping list {list_id}: {e}")
+        return False
+
+
+def get_shopping_list_by_id(list_id: int) -> Optional[Dict[str, Any]]:
+    """Get a single shopping list by id. Returns dict or None."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT sl.*, COUNT(si.id) as item_count,
+                       SUM(CASE WHEN si.is_purchased = 0 THEN 1 ELSE 0 END) as pending_count
+                FROM shopping_lists sl
+                LEFT JOIN shopping_items si ON si.list_id = sl.id
+                WHERE sl.id = ?
+                GROUP BY sl.id
+            """, (list_id,))
+
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            return None
+    except Exception as e:
+        logger.error(f"Error getting shopping list {list_id}: {e}")
+        return None
+
+
+# ==================== FINANCE OPERATIONS ====================
+
+def add_transaction(user_id: int, amount: float, type: str, category: str = 'outros',
+                    description: str = '', transaction_date: Optional[str] = None) -> Optional[int]:
+    """Add a financial transaction. type is 'income' or 'expense'. transaction_date is YYYY-MM-DD string, defaults to today. Returns transaction id or None."""
+    if transaction_date is None:
+        transaction_date = datetime.now().strftime('%Y-%m-%d')
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO transactions (user_id, amount, type, category, description, transaction_date)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (user_id, amount, type, category, description, transaction_date))
+
+            transaction_id = cursor.lastrowid
+            logger.info(f"Transaction created: ID={transaction_id}, user={user_id}, amount={amount}, type={type}")
+            return transaction_id
+    except Exception as e:
+        logger.error(f"Error adding transaction for user {user_id}: {e}")
+        return None
+
+
+def get_transactions(user_id: int, month: Optional[int] = None, year: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Get transactions for a user, optionally filtered by month/year. Returns list of dicts with id, amount, type, category, description, transaction_date."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            if month is not None and year is not None:
+                cursor.execute("""
+                    SELECT id, amount, type, category, description, transaction_date
+                    FROM transactions
+                    WHERE user_id = ?
+                    AND strftime('%m', transaction_date) = ?
+                    AND strftime('%Y', transaction_date) = ?
+                    ORDER BY transaction_date DESC, id DESC
+                """, (user_id, f'{month:02d}', str(year)))
+            elif year is not None:
+                cursor.execute("""
+                    SELECT id, amount, type, category, description, transaction_date
+                    FROM transactions
+                    WHERE user_id = ?
+                    AND strftime('%Y', transaction_date) = ?
+                    ORDER BY transaction_date DESC, id DESC
+                """, (user_id, str(year)))
+            else:
+                cursor.execute("""
+                    SELECT id, amount, type, category, description, transaction_date
+                    FROM transactions
+                    WHERE user_id = ?
+                    ORDER BY transaction_date DESC, id DESC
+                """, (user_id,))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error getting transactions for user {user_id}: {e}")
+        return []
+
+
+def get_monthly_summary(user_id: int, month: int, year: int) -> Dict[str, Any]:
+    """Get monthly finance summary. Returns dict with total_income, total_expense, balance, expense_by_category (dict of category->amount)."""
+    summary = {
+        'total_income': 0.0,
+        'total_expense': 0.0,
+        'balance': 0.0,
+        'expense_by_category': {}
+    }
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # Get total income
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0) as total
+                FROM transactions
+                WHERE user_id = ?
+                AND type = 'income'
+                AND strftime('%m', transaction_date) = ?
+                AND strftime('%Y', transaction_date) = ?
+            """, (user_id, f'{month:02d}', str(year)))
+            row = cursor.fetchone()
+            summary['total_income'] = row['total'] if row else 0.0
+
+            # Get total expense and expense by category
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0) as total, category
+                FROM transactions
+                WHERE user_id = ?
+                AND type = 'expense'
+                AND strftime('%m', transaction_date) = ?
+                AND strftime('%Y', transaction_date) = ?
+                GROUP BY category
+                ORDER BY total DESC
+            """, (user_id, f'{month:02d}', str(year)))
+            rows = cursor.fetchall()
+
+            total_expense = 0.0
+            expense_by_category = {}
+            for row in rows:
+                expense_by_category[row['category']] = row['total']
+                total_expense += row['total']
+
+            summary['total_expense'] = total_expense
+            summary['expense_by_category'] = expense_by_category
+            summary['balance'] = summary['total_income'] - summary['total_expense']
+
+            return summary
+    except Exception as e:
+        logger.error(f"Error getting monthly summary for user {user_id}: {e}")
+        return summary
+
+
+def get_balance(user_id: int) -> float:
+    """Get total balance (all income - all expense) for a user. Returns float."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) -
+                    COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as balance
+                FROM transactions
+                WHERE user_id = ?
+            """, (user_id,))
+
+            row = cursor.fetchone()
+            return row['balance'] if row else 0.0
+    except Exception as e:
+        logger.error(f"Error getting balance for user {user_id}: {e}")
+        return 0.0
+
+
+def get_category_summary(user_id: int, month: int, year: int) -> List[Dict[str, Any]]:
+    """Get expense summary by category for a month. Returns list of dicts with category, total, count, ordered by total desc."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT category, COUNT(*) as count, SUM(amount) as total
+                FROM transactions
+                WHERE user_id = ?
+                AND type = 'expense'
+                AND strftime('%m', transaction_date) = ?
+                AND strftime('%Y', transaction_date) = ?
+                GROUP BY category
+                ORDER BY total DESC
+            """, (user_id, f'{month:02d}', str(year)))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error getting category summary for user {user_id}: {e}")
+        return []
+
+
+def get_recent_transactions(user_id: int, limit: int = 10) -> List[Dict[str, Any]]:
+    """Get most recent transactions. Returns list of dicts."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, amount, type, category, description, transaction_date
+                FROM transactions
+                WHERE user_id = ?
+                ORDER BY transaction_date DESC, id DESC
+                LIMIT ?
+            """, (user_id, limit))
+
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Error getting recent transactions for user {user_id}: {e}")
+        return []
+
+
+def delete_transaction(transaction_id: int) -> bool:
+    """Delete a transaction. Returns True on success."""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
+
+            logger.info(f"Transaction deleted: ID={transaction_id}")
+            return True
+    except Exception as e:
+        logger.error(f"Error deleting transaction {transaction_id}: {e}")
+        return False
 
 
 # Initialize database on module import

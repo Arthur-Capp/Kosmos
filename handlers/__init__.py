@@ -15,5 +15,6 @@ from . import export
 from . import voice
 from . import shopping
 from . import finance
+from . import dashboard
 
-__all__ = ['start', 'help', 'reminder', 'postpone', 'list_handler', 'settings', 'recurring', 'quick', 'today', 'export', 'voice', 'shopping', 'finance']
+__all__ = ['start', 'help', 'reminder', 'postpone', 'list_handler', 'settings', 'recurring', 'quick', 'today', 'export', 'voice', 'shopping', 'finance', 'dashboard']

@@ -75,6 +75,10 @@ TELEGRAM_POOL_TIMEOUT = float(os.getenv("TELEGRAM_POOL_TIMEOUT", "10.0"))  # Poo
 # Monitoring configuration
 MAX_CONSECUTIVE_TIMEOUTS = int(os.getenv("MAX_CONSECUTIVE_TIMEOUTS", "3"))  # Alert threshold
 
+# Web Dashboard configuration
+WEB_SECRET = os.getenv("WEB_SECRET", "kosmos-secret-key-change-me")
+WEB_PORT = int(os.getenv("WEB_PORT", "5000"))
+
 
 def setup_logging():
     """

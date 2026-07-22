@@ -1,0 +1,196 @@
+/* Kosmos Dashboard Custom Styles */
+
+:root {
+    --bg-dark: #0f0f1a;
+    --card-bg: #1a1a2e;
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text-primary: #e0e0e0;
+    --text-muted: #8a8a9a;
+    --accent-blue: #4a9eff;
+    --accent-green: #2ecc71;
+    --accent-red: #e74c3c;
+    --accent-yellow: #f1c40f;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+/* Navbar */
+.navbar {
+    background: linear-gradient(90deg, #1a1a2e 0%, #16213e 100%) !important;
+    border-bottom: 1px solid var(--card-border);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: -0.5px;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+    color: var(--accent-blue) !important;
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+.card-header {
+    border-bottom: 1px solid var(--card-border);
+    padding: 1rem 1.25rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* Shadow utility override */
+.shadow-sm {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Icon circle helper */
+.icon-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* List groups */
+.list-group-item {
+    background: transparent;
+    border-color: var(--card-border);
+    color: var(--text-primary);
+}
+
+.list-group-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Tables */
+.table {
+    color: var(--text-primary);
+    margin-bottom: 0;
+}
+
+.table > :not(caption) > * > * {
+    border-bottom-color: var(--card-border);
+    background: transparent;
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.table-light {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.table-light th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: none;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+/* Headings */
+h2 {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+h6 {
+    font-weight: 600;
+}
+
+/* Links */
+a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+a:hover {
+    color: #7ab8ff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .icon-circle {
+        width: 44px;
+        height: 44px;
+    }
+
+    .icon-circle i {
+        font-size: 1.3rem !important;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}

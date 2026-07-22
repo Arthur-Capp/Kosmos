@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-bell"></i> Lembretes</h2>
+        <p class="text-muted">Todos os lembretes pendentes</p>
+    </div>
+</div>
+
+{% if reminders %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0">{{ reminders|length }} lembrete(s) pendente(s)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Mensagem</th>
+                                <th>Data</th>
+                                <th>Horário</th>
+                                <th>Recorrente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in reminders %}
+                            <tr>
+                                <td><small>{{ loop.index }}</small></td>
+                                <td>{{ r.message_text }}</td>
+                                <td>
+                                    {% if r.scheduled_time %}
+                                    {% set parts = r.scheduled_time[:10].split('-') %}
+                                    <small>{{ parts[2] }}/{{ parts[1] }}/{{ parts[0] }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.scheduled_time and r.scheduled_time|length >= 16 %}
+                                    <small>{{ r.scheduled_time[11:16] }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.is_recurring %}
+                                    <span class="badge bg-success">Sim</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Não</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-bell-slash fs-1 text-muted mb-3 d-block"></i>
+                <h5>Nenhum lembrete pendente</h5>
+                <p class="text-muted">Use o bot do Telegram para criar lembretes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

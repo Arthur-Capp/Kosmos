@@ -24,7 +24,7 @@ msgstr "Sve je spremno! 🎉\n\nKoristi dugmad ispod za brzi pristup, ili mi sam
 
 # Commands help
 msgid "help_message"
-msgstr "📖 *Kosmos Pomoć*\n\n*Kreiranje podsetnika:*\nPošalji poruku sa tekstom i vremenom:\n• `Tekst podsetnika sutra 16:00`\n• `Tekst podsetnika pon 10:00`\n• `Tekst podsetnika 14:30`\n\n*Ponavljajući podsetnoci:* 🔁\nKoristi /recurring da kreiraš podsetnike koji se automatski ponavljaju:\n• Svaki dan - Svakog dana u isto vreme\n• Svaki X dan - Ponavlja se svakih N dana\n• Nedeljno - Određeni dani (Pon, Sre, Pet...)\n• Mesečno - Određeni dan u mesecu\n\n*Shopping lists:* 🛒\n/listas - View your active lists\n/lista <name> - Create new list\n/add milk, bread, eggs - Add items to list\n\n*Finance:* 💰\n/gasto <amount> <category> - Register expense\n/receita <amount> <category> - Register income\n/gastos - Monthly summary\n/saldo - View current balance\n/extrato - View recent transactions\n\n*Podržani formati vremena:*\n• Dani: sutra, prekosutra, pon/uto/sre/cet/pet/sub/ned\n• Sledeća nedelja: sl pon/uto/sre/cet/pet/sub/ned\n• Vreme: 21:00, 8, 7am, 2100, itd.\n\n*Komande:*\n/list - Prikaži sve podsetnike u budućnosti\n/recurring - Kreiraj ponavljajući podsetnik\n/settings - Promeni jezik, format vremena, vremensku zonu\n/help - Prikaži ovu pomoć\n\n*Brze akcije:*\nKoristi dugmad 'List' i 'Ponavljajući' ispod za brzi pristup."
+msgstr "📖 *Kosmos Pomoć*\n\n*Kreiranje podsetnika:*\nPošalji poruku sa tekstom i vremenom:\n• `Tekst podsetnika sutra 16:00`\n• `Tekst podsetnika pon 10:00`\n• `Tekst podsetnika 14:30`\n\n*Ponavljajući podsetnoci:* 🔁\nKoristi /recurring da kreiraš podsetnike koji se automatski ponavljaju:\n• Svaki dan - Svakog dana u isto vreme\n• Svaki X dan - Ponavlja se svakih N dana\n• Nedeljno - Određeni dani (Pon, Sre, Pet...)\n• Mesečno - Određeni dan u mesecu\n\n*Shopping lists:* 🛒\n/listas - View your active lists\n/lista <name> - Create new list\n/add milk, bread, eggs - Add items to list\n\n*Finance:* 💰\n/gasto <amount> <category> - Register expense\n/receita <amount> <category> - Register income\n/gastos - Monthly summary\n/saldo - View current balance\n/extrato - View recent transactions\n\n*Podržani formati vremena:*\n• Dani: sutra, prekosutra, pon/uto/sre/cet/pet/sub/ned\n• Sledeća nedelja: sl pon/uto/sre/cet/pet/sub/ned\n• Vreme: 21:00, 8, 7am, 2100, itd.\n\n*Komande:*\n/list - Prikaži sve podsetnike u budućnosti\n/recurring - Kreiraj ponavljajući podsetnik\n/settings - Promeni jezik, format vremena, vremensku zonu\n/help - Prikaži ovu pomoć\n/dashboard - Pristupi web dashboardu\n\n*Brze akcije:*\nKoristi dugmad 'List' i 'Ponavljajući' ispod za brzi pristup."
 
 msgid "new_reminder_prompt"
 msgstr "📝 Da kreiraš podsetnik, pošalji mi poruku u ovom formatu:\n\n`[Tvoj tekst podsetnika] [dan] [vreme]`\n\n*Primeri:*\n• Ponesi pecaljku na jezero sutra 16:00\n• Sastanak pon 10:00\n• Poziv sl pon 9:00\n• Kafa 14:30"
@@ -190,3 +190,7 @@ msgstr "❌ Audio je prazan ili tih. Pokušajte ponovo."
 
 msgid "voice_transcribed"
 msgstr "🎤 Rekli ste: \"{text}\"\n\nKreiram podsetnik..."
+
+# Dashboard
+msgid "dashboard_link"
+msgstr "📊 Pristupite svom dashboardu:"

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+        <p class="text-muted">Visão geral dos seus dados</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle text-muted mb-2">Saldo Atual</h6>
+                        <h3 class="card-title mb-0 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if user_lang == 'pt-br' %}
+                                R$ {{ "%.2f"|format(balance)|replace(".", ",") }}
+                            {% elif user_lang == 'sr-lat' %}
+                                {{ "%.2f"|format(balance)|replace(".", ",") }} RSD
+                            {% else %}
+                                $ {{ "%.2f"|format(balance) }}
+                            {% endif %}
+                        </h3>
+                    </div>
+                    <div class="icon-circle bg-success bg-opacity-10">
+                        <i class="bi bi-wallet2 fs-2 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle text-muted mb-2">Próximos Lembretes</h6>
+                        <h3 class="card-title mb-0">{{ reminders|length }}</h3>
+                        <small class="text-muted">pendentes</small>
+                    </div>
+                    <div class="icon-circle bg-warning bg-opacity-10">
+                        <i class="bi bi-bell fs-2 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+            {% if reminders %}
+            <ul class="list-group list-group-flush">
+                {% for r in reminders[:3] %}
+                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <small>{{ r.message_text[:40] }}{% if r.message_text|length > 40 %}...{% endif %}</small>
+                    <small class="text-muted">{{ r.scheduled_time[:16]|replace("T", " ") }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle text-muted mb-2">Listas Ativas</h6>
+                        <h3 class="card-title mb-0">{{ lists|length }}</h3>
+                        <small class="text-muted">listas de compras</small>
+                    </div>
+                    <div class="icon-circle bg-info bg-opacity-10">
+                        <i class="bi bi-cart3 fs-2 text-info"></i>
+                    </div>
+                </div>
+            </div>
+            {% if lists %}
+            <ul class="list-group list-group-flush">
+                {% for lst in lists[:3] %}
+                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <small>{{ lst.name }}</small>
+                    <span class="badge bg-info rounded-pill">
+                        {{ lst.pending_count or 0 }}/{{ lst.item_count or 0 }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Category Pie Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Gastos por Categoria (Este Mês)</h6>
+            </div>
+            <div class="card-body">
+                {% if categories %}
+                <canvas id="categoryPieChart" height="250"></canvas>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhum gasto registrado este mês.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Transações Recentes</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_txns %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Valor</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in recent_txns %}
+                            <tr>
+                                <td>
+                                    <small>{{ t.description or t.category }}</small>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ t.category }}</span></td>
+                                <td>
+                                    <span class="{% if t.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                                        <small>
+                                        {% if user_lang == 'pt-br' %}
+                                            R$ {{ "%.2f"|format(t.amount)|replace(".", ",") }}
+                                        {% elif user_lang == 'sr-lat' %}
+                                            {{ "%.2f"|format(t.amount)|replace(".", ",") }} RSD
+                                        {% else %}
+                                            $ {{ "%.2f"|format(t.amount) }}
+                                        {% endif %}
+                                        </small>
+                                    </span>
+                                </td>
+                                <td><small class="text-muted">{{ t.transaction_date[8:10] }}/{{ t.transaction_date[5:7] }}/{{ t.transaction_date[:4] }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhuma transação encontrada.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if categories %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categories = {{ categories|tojson }};
+    initCategoryPie('categoryPieChart', categories);
+});
+</script>
+{% endif %}
+{% endblock %}

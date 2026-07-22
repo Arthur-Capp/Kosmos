@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-currency-dollar"></i> Finanças</h2>
+        <p class="text-muted">Resumo financeiro do mês {{ month }}/{{ year }}</p>
+    </div>
+</div>
+
+<!-- Balance Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Saldo Total</h6>
+                <h2 class="{% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {% if user_lang == 'pt-br' %}
+                        R$ {{ "%.2f"|format(balance)|replace(".", ",") }}
+                    {% elif user_lang == 'sr-lat' %}
+                        {{ "%.2f"|format(balance)|replace(".", ",") }} RSD
+                    {% else %}
+                        $ {{ "%.2f"|format(balance) }}
+                    {% endif %}
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Income vs Expense Bar Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Receitas vs Despesas (6 meses)</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyBarChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Pie Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Gastos por Categoria</h6>
+            </div>
+            <div class="card-body">
+                {% if categories %}
+                <canvas id="categoryPieChart" height="250"></canvas>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhum gasto registrado este mês.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Summary -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Receitas do Mês</h6>
+                <h4 class="text-success">
+                    {% if user_lang == 'pt-br' %}
+                        R$ {{ "%.2f"|format(summary.total_income)|replace(".", ",") }}
+                    {% elif user_lang == 'sr-lat' %}
+                        {{ "%.2f"|format(summary.total_income)|replace(".", ",") }} RSD
+                    {% else %}
+                        $ {{ "%.2f"|format(summary.total_income) }}
+                    {% endif %}
+                </h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Despesas do Mês</h6>
+                <h4 class="text-danger">
+                    {% if user_lang == 'pt-br' %}
+                        R$ {{ "%.2f"|format(summary.total_expense)|replace(".", ",") }}
+                    {% elif user_lang == 'sr-lat' %}
+                        {{ "%.2f"|format(summary.total_expense)|replace(".", ",") }} RSD
+                    {% else %}
+                        $ {{ "%.2f"|format(summary.total_expense) }}
+                    {% endif %}
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Transações do Mês</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transactions %}
+                            <tr>
+                                <td><small>{{ t.transaction_date[8:10] }}/{{ t.transaction_date[5:7] }}/{{ t.transaction_date[:4] }}</small></td>
+                                <td><small>{{ t.description or '-' }}</small></td>
+                                <td><span class="badge bg-secondary">{{ t.category }}</span></td>
+                                <td>
+                                    {% if t.type == 'income' %}
+                                    <span class="badge bg-success">Receita</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Despesa</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="{% if t.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                                        <small>
+                                        {% if user_lang == 'pt-br' %}
+                                            R$ {{ "%.2f"|format(t.amount)|replace(".", ",") }}
+                                        {% elif user_lang == 'sr-lat' %}
+                                            {{ "%.2f"|format(t.amount)|replace(".", ",") }} RSD
+                                        {% else %}
+                                            $ {{ "%.2f"|format(t.amount) }}
+                                        {% endif %}
+                                        </small>
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhuma transação neste mês.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch data from API
+    fetch('{{ url_for("api_finance_data", token=token) }}')
+        .then(response => response.json())
+        .then(data => {
+            {% if categories %}
+            // Category pie chart (current month from template context is fine)
+            const categories = {{ categories|tojson }};
+            initCategoryPie('categoryPieChart', categories);
+            {% endif %}
+
+            // Monthly bar chart (uses data from API for last 6 months)
+            if (data.monthly) {
+                initMonthlyBar('monthlyBarChart', data.monthly);
+            }
+        })
+        .catch(error => console.error('Error loading finance data:', error));
+});
+</script>
+{% endblock %}

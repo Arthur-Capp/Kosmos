@@ -5,6 +5,7 @@ Handles SQLite database connection and operations.
 
 import sqlite3
 import logging
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -94,6 +95,91 @@ def migrate_remind_before_column(cursor):
     logger.info("Remind_before column migration completed")
 
 
+def migrate_web_token_column(cursor):
+    """
+    Migration function to add web_token column to the users table.
+    Stores a unique token for web dashboard authentication.
+    """
+    logger.info("Checking for web_token column migration...")
+
+    # Get existing columns
+    cursor.execute("PRAGMA table_info(users)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+
+    if 'web_token' not in existing_columns:
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN web_token TEXT")
+            logger.info("Added column 'web_token' to users table")
+        except Exception as e:
+            logger.error(f"Error adding column 'web_token': {e}")
+            raise
+    else:
+        logger.debug("Column 'web_token' already exists, skipping")
+
+    logger.info("Web_token column migration completed")
+
+
+def generate_web_token(user_id: int) -> Optional[str]:
+    """
+    Generate a unique web token for a user and store it in the database.
+    If the user already has a token, return the existing one.
+
+    Args:
+        user_id: Telegram user ID
+
+    Returns:
+        Token string or None on failure
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # Check if user already has a token
+            cursor.execute("SELECT web_token FROM users WHERE telegram_id = ?", (user_id,))
+            row = cursor.fetchone()
+
+            if row and row['web_token']:
+                logger.info(f"User {user_id} already has web token, returning existing")
+                return row['web_token']
+
+            # Generate new token
+            token = uuid.uuid4().hex
+            cursor.execute(
+                "UPDATE users SET web_token = ? WHERE telegram_id = ?",
+                (token, user_id)
+            )
+
+            logger.info(f"Web token generated for user {user_id}")
+            return token
+    except Exception as e:
+        logger.error(f"Error generating web token for user {user_id}: {e}")
+        return None
+
+
+def get_user_by_web_token(token: str) -> Optional[Dict[str, Any]]:
+    """
+    Get user by web token.
+
+    Args:
+        token: Web token string
+
+    Returns:
+        User data as dictionary or None if not found
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE web_token = ?", (token,))
+            row = cursor.fetchone()
+
+            if row:
+                return dict(row)
+            return None
+    except Exception as e:
+        logger.error(f"Error getting user by web token: {e}")
+        return None
+
+
 def init_database():
     """
     Initialize database and create tables if they don't exist.
@@ -150,6 +236,9 @@ def init_database():
 
         # Run migration for remind_before column
         migrate_remind_before_column(cursor)
+
+        # Run migration for web_token column
+        migrate_web_token_column(cursor)
 
         # ==================== SHOPPING LIST TABLES ====================
         cursor.execute("""

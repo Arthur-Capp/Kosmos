@@ -4,6 +4,7 @@ Transcribes voice messages and creates reminders from the transcribed text.
 """
 
 import logging
+import re
 from io import BytesIO
 from datetime import datetime
 import pytz
@@ -11,7 +12,7 @@ from telegram import Update
 from telegram.ext import ContextTypes, MessageHandler, filters
 from telegram.error import NetworkError, TimedOut
 
-from database import get_user, create_reminder
+from database import get_user, create_reminder, add_transaction, create_shopping_list, get_active_shopping_lists, add_shopping_item
 from parsers.time_parser import parse_reminder, format_reminder_confirmation
 from i18n import get_text
 from message_queue import queue_message
@@ -24,6 +25,90 @@ STT_LANGUAGE_MAP = {
     "pt-br": "pt-BR",
     "sr-lat": "sr-RS",
 }
+
+
+def detect_shopping_intent(text: str, user_lang: str):
+    """
+    Detect shopping list intent from transcribed text.
+
+    Args:
+        text: Transcribed text from voice message
+        user_lang: User's language code (pt-br, en, sr-lat)
+
+    Returns:
+        Tuple of (action, data) where action is 'create_list' or 'add_items'
+        and data is the list name (str) or items list (list[str]).
+        Returns None if no shopping intent detected.
+    """
+    if not text:
+        return None
+
+    text_lower = text.strip().lower()
+    user_lang = user_lang if user_lang in ("pt-br", "en", "sr-lat") else "en"
+
+    # Keywords per language
+    create_keywords = {
+        "pt-br": ["cria lista", "nova lista", "criar lista", "crie uma lista"],
+        "en":     ["create list", "new list", "create a list", "make a list"],
+        "sr-lat": ["napravi listu", "nova lista", "kreiraj listu"],
+    }
+
+    add_keywords = {
+        "pt-br": ["adiciona na lista", "adiciona na", "coloca na lista", "adiciona "],
+        "en":     ["add to list", "add to shopping", "add "],
+        "sr-lat": ["dodaj na listu", "dodaj u"],
+    }
+
+    # --- check create list intent ---
+    for kw in create_keywords[user_lang]:
+        if kw in text_lower:
+            idx = text_lower.index(kw) + len(kw)
+            name = text[idx:].strip()
+            # clean trailing prepositions / qualifiers
+            name = re.sub(
+                r'(?i)^(de compras|do mercado|da feira|shopping|for)\s*',
+                '', name
+            ).strip()
+            # clean leading articles
+            name = re.sub(r'(?i)^(a|o|as|os|the)\s+', '', name).strip()
+            if not name:
+                # default name per language
+                defaults = {"pt-br": "Compras", "en": "Shopping", "sr-lat": "Kupovina"}
+                name = defaults.get(user_lang, "Shopping")
+            return ('create_list', name)
+
+    # --- check add items intent ---
+    for kw in add_keywords[user_lang]:
+        if kw in text_lower:
+            idx = text_lower.index(kw) + len(kw)
+            rest = text[idx:].strip()
+
+            # trim trailing list reference
+            if user_lang == "pt-br":
+                rest = re.sub(
+                    r'(?i)\s+(na|nesta|nessa)\s+lista(\s+de\s+compras)?\s*$',
+                    '', rest
+                ).strip()
+                # when keyword ended with "na" we may have leading "lista"
+                rest = re.sub(r'(?i)^lista\s+', '', rest).strip()
+            elif user_lang == "en":
+                rest = re.sub(
+                    r'(?i)\s+(to|in|on)\s+(the\s+)?(list|shopping)(\s+list)?\s*$',
+                    '', rest
+                ).strip()
+            elif user_lang == "sr-lat":
+                rest = re.sub(
+                    r'(?i)\s+(na|u)\s+listu\s*$',
+                    '', rest
+                ).strip()
+
+            if rest:
+                items = re.split(r'[,;]|\s+e\s+|\s+and\s+', rest)
+                items = [it.strip() for it in items if it.strip()]
+                if items:
+                    return ('add_items', items)
+
+    return None
 
 
 async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -82,7 +167,109 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
             get_text("voice_transcribed", user_lang, text=text)
         )
 
-        # Parse transcribed text as a reminder (same logic as reminder.py)
+        # === INTENT DETECTION ===
+        # Try finance intent first (lazy import to avoid circular dependency)
+        from handlers.finance import parse_finance_message, format_currency
+
+        finance_result = parse_finance_message(text)
+        if finance_result:
+            amount, ftype, category, description = finance_result
+            transaction_id = add_transaction(
+                user_id=user['id'],
+                amount=amount,
+                type=ftype,
+                category=category,
+                description=description,
+            )
+            if transaction_id:
+                if ftype == 'expense':
+                    label_pt = 'Despesa'
+                    label_en = 'Expense'
+                    label_sr = 'Trošak'
+                else:
+                    label_pt = 'Receita'
+                    label_en = 'Income'
+                    label_sr = 'Prihod'
+
+                if user_lang == 'pt-br':
+                    confirm = f"✅ {label_pt} registrada: {format_currency(amount, user_lang)} - {category}"
+                elif user_lang == 'sr-lat':
+                    confirm = f"✅ {label_sr} zabeležen: {format_currency(amount, user_lang)} - {category}"
+                else:
+                    confirm = f"✅ {label_en} recorded: {format_currency(amount, user_lang)} - {category}"
+
+                await update.message.reply_text(confirm)
+                logger.info(
+                    f"Voice finance transaction created: user={user['id']}, "
+                    f"amount={amount}, type={ftype}, category={category}"
+                )
+                return
+            else:
+                await update.message.reply_text(get_text("error_occurred", user_lang))
+                return
+
+        # Try shopping intent
+        shopping_result = detect_shopping_intent(text, user_lang)
+        if shopping_result:
+            action, data = shopping_result
+
+            if action == 'create_list':
+                list_id = create_shopping_list(user_id=user['id'], name=data)
+                if list_id:
+                    if user_lang == 'pt-br':
+                        confirm = f"✅ Lista criada: {data}"
+                    elif user_lang == 'sr-lat':
+                        confirm = f"✅ Lista kreirana: {data}"
+                    else:
+                        confirm = f"✅ List created: {data}"
+                    await update.message.reply_text(confirm)
+                    logger.info(f"Voice shopping list created: user={user['id']}, name={data}")
+                    return
+                else:
+                    await update.message.reply_text(get_text("error_occurred", user_lang))
+                    return
+
+            elif action == 'add_items':
+                lists = get_active_shopping_lists(user_id=user['id'])
+                if not lists:
+                    if user_lang == 'pt-br':
+                        await update.message.reply_text(
+                            "Você não tem nenhuma lista de compras ativa. Crie uma primeiro."
+                        )
+                    elif user_lang == 'sr-lat':
+                        await update.message.reply_text(
+                            "Nemate aktivnu listu za kupovinu. Prvo napravite jednu."
+                        )
+                    else:
+                        await update.message.reply_text(
+                            "You don't have any active shopping list. Create one first."
+                        )
+                    return
+
+                list_id = lists[0]['id']
+                added = []
+                for item in data:
+                    if add_shopping_item(list_id=list_id, name=item):
+                        added.append(item)
+
+                if added:
+                    if user_lang == 'pt-br':
+                        confirm = "✅ Item(ns) adicionado(s) à lista"
+                    elif user_lang == 'sr-lat':
+                        confirm = "✅ Stavka(e) dodata(e) na listu"
+                    else:
+                        confirm = "✅ Item(s) added to list"
+                    await update.message.reply_text(confirm)
+                    logger.info(
+                        f"Voice shopping items added: user={user['id']}, "
+                        f"list_id={list_id}, items={added}"
+                    )
+                    return
+                else:
+                    await update.message.reply_text(get_text("error_occurred", user_lang))
+                    return
+
+        # Fallback: parse transcribed text as a reminder (original behavior)
         result = parse_reminder(text, user_timezone)
 
         if not result:

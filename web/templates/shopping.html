@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-cart3"></i> Listas de Compras</h2>
+        <p class="text-muted">Suas listas ativas</p>
+    </div>
+</div>
+
+{% if lists %}
+<div class="row">
+    {% for lst in lists %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-cart-check"></i> {{ lst.name }}
+                </h6>
+                <span class="badge bg-info rounded-pill">
+                    {{ lst.pending_count or 0 }} pendentes / {{ lst.item_count or 0 }} total
+                </span>
+            </div>
+            <div class="card-body p-0">
+                {% set list_items = items_by_list.get(lst.id, []) %}
+                {% if list_items %}
+                <ul class="list-group list-group-flush">
+                    {% for item in list_items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            {% if item.is_purchased %}
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <span class="text-decoration-line-through text-muted">{{ item.name }}</span>
+                            {% else %}
+                            <i class="bi bi-circle text-secondary me-2"></i>
+                            <span>{{ item.name }}</span>
+                            {% endif %}
+                            <small class="text-muted ms-1">({{ item.quantity }})</small>
+                        </div>
+                        {% if item.estimated_price and item.estimated_price > 0 %}
+                        <small class="text-muted">
+                            R$ {{ "%.2f"|format(item.estimated_price) }}
+                        </small>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center py-4 mb-0">Nenhum item nesta lista.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-cart3 fs-1 text-muted mb-3 d-block"></i>
+                <h5>Nenhuma lista ativa</h5>
+                <p class="text-muted">Use o comando /lista no Telegram para criar uma.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

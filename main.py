@@ -16,11 +16,21 @@ from config import (
     TELEGRAM_CONNECT_TIMEOUT,
     TELEGRAM_READ_TIMEOUT,
     TELEGRAM_WRITE_TIMEOUT,
-    TELEGRAM_POOL_TIMEOUT
+    TELEGRAM_POOL_TIMEOUT,
+    WEB_PORT
 )
 from database import init_database
-from handlers import start, help as help_handler, reminder, postpone, list_handler, settings, recurring, today, export, voice, shopping, finance
+from handlers import start, help as help_handler, reminder, postpone, list_handler, settings, recurring, today, export, voice, shopping, finance, dashboard
 from scheduler import start_scheduler
+
+# Try to import Flask web dashboard
+try:
+    from web.app import start_flask
+    WEB_AVAILABLE = True
+except ImportError:
+    WEB_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("Flask web dashboard not available")
 
 # Try to import bot_stats for initial description update
 try:
@@ -56,6 +66,7 @@ async def post_init(application: Application) -> None:
         BotCommand("gastos", "Resumo financeiro do mês"),
         BotCommand("saldo", "Ver saldo atual"),
         BotCommand("extrato", "Ver extrato recente"),
+        BotCommand("dashboard", "Abrir dashboard web"),
     ]
     await application.bot.set_my_commands(commands)
     logger.info("Bot commands registered")
@@ -110,9 +121,17 @@ def main():
     voice.register_handlers(application)  # Voice message handler
     shopping.register_handlers(application)  # Shopping list commands
     finance.register_handlers(application)  # Finance commands
+    dashboard.register_handlers(application)  # Dashboard command
     reminder.register_handlers(application)  # Must be last (catches all text messages)
 
     logger.info("All handlers registered successfully!")
+
+    # Start Flask web dashboard in a daemon thread
+    if WEB_AVAILABLE:
+        start_flask()
+        logger.info(f"Web dashboard started on port {WEB_PORT}")
+    else:
+        logger.warning("Web dashboard not available")
 
     # Start polling
     logger.info("Bot started successfully! Polling for updates...")

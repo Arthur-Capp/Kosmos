@@ -175,7 +175,7 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
         if finance_result:
             amount, ftype, category, description = finance_result
             transaction_id = add_transaction(
-                user_id=user['id'],
+                user_id=user_id,
                 amount=amount,
                 type=ftype,
                 category=category,
@@ -200,7 +200,7 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
 
                 await update.message.reply_text(confirm)
                 logger.info(
-                    f"Voice finance transaction created: user={user['id']}, "
+                    f"Voice finance transaction created: user={user_id}, "
                     f"amount={amount}, type={ftype}, category={category}"
                 )
                 return
@@ -214,7 +214,7 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
             action, data = shopping_result
 
             if action == 'create_list':
-                list_id = create_shopping_list(user_id=user['id'], name=data)
+                list_id = create_shopping_list(user_id=user_id, name=data)
                 if list_id:
                     if user_lang == 'pt-br':
                         confirm = f"✅ Lista criada: {data}"
@@ -223,14 +223,14 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
                     else:
                         confirm = f"✅ List created: {data}"
                     await update.message.reply_text(confirm)
-                    logger.info(f"Voice shopping list created: user={user['id']}, name={data}")
+                    logger.info(f"Voice shopping list created: user={user_id}, name={data}")
                     return
                 else:
                     await update.message.reply_text(get_text("error_occurred", user_lang))
                     return
 
             elif action == 'add_items':
-                lists = get_active_shopping_lists(user_id=user['id'])
+                lists = get_active_shopping_lists(user_id=user_id)
                 if not lists:
                     if user_lang == 'pt-br':
                         await update.message.reply_text(
@@ -261,7 +261,7 @@ async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYP
                         confirm = "✅ Item(s) added to list"
                     await update.message.reply_text(confirm)
                     logger.info(
-                        f"Voice shopping items added: user={user['id']}, "
+                        f"Voice shopping items added: user={user_id}, "
                         f"list_id={list_id}, items={added}"
                     )
                     return
